@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer">
+    <title>NOVA – AI Resume Builder</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                rose: '#e11d48',
+                gold: '#d4af37', // Luxury Gold
+                navy: '#0f172a',
+                slate: '#f8fafc',
+                dark: '#0a0a0a',
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              serif: ['Playfair Display', 'serif'],
+            }
+          }
+        }
+      }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700;800&family=Lato:wght@300;400;700&family=Merriweather:wght@300;400;700&family=Montserrat:wght@300;400;600&family=Open+Sans:wght@300;400;600&family=Oswald:wght@400;600&family=Poppins:wght@300;400;600&family=Raleway:wght@300;400;600&family=Roboto:wght@300;400;500&family=Nunito+Sans:wght@300;400;600&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <!-- Google Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+    <!-- Print & Export Utilities -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- PDF.js for reading PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+      // Initialize worker for PDF.js
+      if (window.pdfjsLib) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+    </script>
+
+    <!-- Mammoth.js for Word Processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+    <!-- JSZip for PPTX reading -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <!-- PptxGenJS for PPTX creation -->
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+
+    <!-- HTML2PDF & jsPDF (Loaded last to handle globals) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+      /* --- WEB PREVIEW STYLES --- */
+      .a4-preview-container {
+        width: 210mm;
+        min-height: 297mm; /* Ensure it looks like a full page even if empty */
+        margin: 0 auto;
+        background: white;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+        transform-origin: top center;
+      }
+      
+      /* --- PRINT STYLES (PDF Generation) --- */
+      @media print {
+        @page {
+          margin: 0;
+          size: A4;
+        }
+        
+        body, html {
+          background: white !important;
+          color: black !important;
+          height: auto !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: visible !important;
+        }
+        
+        /* Hide UI Elements */
+        header, nav, aside, footer, .no-print {
+          display: none !important;
+        }
+
+        /* Hide the React Root container wrapper logic */
+        #root {
+          display: block !important;
+          position: static !important;
+          width: 100% !important;
+          height: auto !important;
+          overflow: visible !important;
+        }
+
+        /* Target the Resume Preview container specifically */
+        .a4-preview-container {
+          position: relative !important;
+          left: auto !important;
+          top: auto !important;
+          width: 210mm !important;
+          min-height: 297mm !important;
+          margin: 0 auto !important;
+          padding: 0 !important;
+          transform: none !important; /* CRITICAL: Reset the scaling transform */
+          box-shadow: none !important;
+          overflow: visible !important;
+          background: white !important;
+          color: black !important;
+          display: block !important;
+        }
+
+        /* Hide everything else inside root that isn't the resume */
+        #root > div {
+           display: block !important; /* The main app wrapper */
+        }
+        
+        /* This hides the editor panel and header if they weren't caught by no-print */
+        main {
+          display: block !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        
+        /* If using the split screen layout, ensure specific panels are hidden/shown */
+        section {
+           display: none !important; /* Hide sections by default (editor) */
+        }
+        
+        /* Force show the preview section */
+        section:has(.a4-preview-container) {
+           display: block !important;
+           position: static !important;
+           width: 100% !important;
+           transform: none !important;
+           background: white !important;
+        }
+        
+        /* Ensure text is black for printing */
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          color: black !important; /* Force text to black */
+        }
+        
+        /* Allow background colors (for accent headers) */
+        .bg-slate-800, .bg-blue-800, .bg-rose-800, .bg-emerald-800 {
+           color: white !important; /* Revert text to white for dark backgrounds */
+        }
+      }
+      
+      /* --- ANIMATIONS --- */
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+      }
+      
+      @keyframes scaleUp {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      .animate-scale-up {
+        animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      
+      @keyframes shimmer {
+        100% { transform: translateX(100%); }
+      }
+
+      /* Custom Scrollbar */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+      .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #334155;
+      }
+      
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-slate-50 text-slate-800 antialiased selection:bg-rose-500 selection:text-white dark:bg-brand-dark dark:text-slate-100 transition-colors duration-300">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
