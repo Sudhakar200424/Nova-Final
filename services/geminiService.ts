@@ -1,33 +1,55 @@
-
 /*
   NOVA – AI Resume Builder
   --------------------------------
   Service for Google Gemini API interactions.
+  
+  NOTE: The GoogleGenAI import and API key initialization were removed for security.
 */
 
-import { GoogleGenAI } from "@google/genai";
-
-// === API CONFIGURATION ===
-// The API key must be obtained exclusively from the environment variable process.env.API_KEY.
-const ai = new GoogleGenAI({
-apiKey: import.meta.env.VITE_GEMINI_API_KEY
-});
+// REMOVED: import { GoogleGenAI } from "@google/genai";
+// REMOVED: const ai = new GoogleGenAI(...)
 
 export interface GeminiResponse {
   text: string;
   error?: string;
 }
 
+/**
+ * Executes AI generation by securely calling the Vercel serverless API route.
+ * @param prompt The text prompt (using PROMPTS object) to send for AI generation.
+ * @returns An object containing the generated text or an error message.
+ */
 export const generateContent = async (prompt: string): Promise<GeminiResponse> => {
   try {
-    // Guidelines: Use gemini-2.5-flash for basic text tasks
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
+    // 1. Make a secure request to the Vercel Serverless Function
+    // This calls the code in your api/generate.ts file, which is where the key is securely used.
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Send the prompt data in the body for the server to use
+      body: JSON.stringify({ prompt: prompt }),
     });
 
-    const generatedText = response.text;
-    
+    const data = await response.json();
+
+    if (!response.ok) {
+      // 2. Handle errors returned by the serverless function (4xx or 5xx)
+      console.error('Serverless function failed:', data);
+
+      let message = data.details || data.message || 'AI generation service failed to respond.';
+      
+      // User friendly mapping for common issues now handled by the serverless function
+      if (message.includes('API Key')) message = 'AI service configuration error. Please check Vercel environment variables.';
+      if (message.includes('quota')) message = 'API Quota Exceeded. Try again later.';
+      
+      return { text: '', error: message };
+    }
+
+    // 3. Parse the successful response from the serverless function
+    const generatedText = data.generatedText;
+
     if (!generatedText) {
       return { text: '', error: 'AI returned no content. Try a different prompt.' };
     }
@@ -35,17 +57,13 @@ export const generateContent = async (prompt: string): Promise<GeminiResponse> =
     return { text: generatedText };
 
   } catch (error: any) {
-    console.error('Gemini API Error:', error);
-    let message = error.message || 'Network connection failed.';
-    // User friendly mapping
-    if (message.includes('API key')) return { text: '', error: 'Invalid API Key. Please check the environment configuration.' };
-    if (message.includes('quota')) return { text: '', error: 'API Quota Exceeded. Try again later.' };
-
-    return { text: '', error: message };
+    console.error('Network Fetch Error:', error);
+    // This catch block handles pure client-side network issues (e.g., disconnected internet)
+    return { text: '', error: 'Network connection failed while attempting to reach the AI service.' };
   }
 };
 
-// Prompts optimized for ATS and professional tone
+// Prompts optimized for ATS and professional tone - KEEP THIS SECTION
 export const PROMPTS = {
   summary: (role: string, skills: string, experienceLevel: string) => `
     Act as a professional resume writer. Write a high-impact, professional resume summary (max 3 sentences) for a ${experienceLevel} ${role}.
