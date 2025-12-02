@@ -1,17 +1,7 @@
 
-/*
-  NOVA – AI Resume Builder
-  --------------------------------
-  Service for Google Gemini API interactions.
-*/
+  //NOVA – AI Resume Builder
+  //Secure Gemini API Client (Frontend calls Vercel serverless function)
 
-import { GoogleGenAI } from "@google/genai";
-
-// === API CONFIGURATION ===
-// The API key must be obtained exclusively from the environment variable process.env.API_KEY.
-const ai = new GoogleGenAI({
-apiKey: import.meta.env.VITE_GEMINI_API_KEY
-});
 
 export interface GeminiResponse {
   text: string;
@@ -20,28 +10,22 @@ export interface GeminiResponse {
 
 export const generateContent = async (prompt: string): Promise<GeminiResponse> => {
   try {
-    // Guidelines: Use gemini-2.5-flash for basic text tasks
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
+    const response = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
     });
 
-    const generatedText = response.text;
-    
-    if (!generatedText) {
-      return { text: '', error: 'AI returned no content. Try a different prompt.' };
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { text: "", error: data.error || "Server error" };
     }
 
-    return { text: generatedText };
+    return { text: data.text };
 
   } catch (error: any) {
-    console.error('Gemini API Error:', error);
-    let message = error.message || 'Network connection failed.';
-    // User friendly mapping
-    if (message.includes('API key')) return { text: '', error: 'Invalid API Key. Please check the environment configuration.' };
-    if (message.includes('quota')) return { text: '', error: 'API Quota Exceeded. Try again later.' };
-
-    return { text: '', error: message };
+    return { text: "", error: "Network error. Try again." };
   }
 };
 
