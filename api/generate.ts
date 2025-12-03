@@ -1,38 +1,35 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export default async function handler(req: any, res: any) {
+;
+
+export const config = {
+  runtime: "edge",
+};
+
+export default async function handler(req: Request) {
   try {
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Only POST allowed" });
-    }
-
     const apiKey = process.env.GEMINI_SECRET_KEY;
+
     if (!apiKey) {
-      return res.status(500).json({ error: "Missing GEMINI_SECRET_KEY" });
+      return new Response(
+        JSON.stringify({ error: "Missing GEMINI_SECRET_KEY" }),
+        { status: 500 }
+      );
     }
 
-    const ai = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
 
-    const { prompt } = req.body;
-    if (!prompt) {
-      return res.status(400).json({ error: "Prompt is required" });
-    }
+    const { prompt } = await req.json();
 
-    const result = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-    });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    // Extract text (new SDK format)
-    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
 
-    if (!text) {
-      return res.status(500).json({ error: "Empty response from Gemini" });
-    }
-
-    return res.status(200).json({ text });
+    return new Response(JSON.stringify({ text }), { status: 200 });
 
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
 }
+
