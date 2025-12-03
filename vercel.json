@@ -1,6 +1,12 @@
 {
   "version": 2,
+  "functions": {
+    "api/generate.ts": {
+      "runtime": "nodejs20.x"
+    }
+  },
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1.ts" }
+    { "src": "/api/generate", "dest": "/api/generate.ts" }
   ]
 }
+
