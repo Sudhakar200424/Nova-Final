@@ -1,2 +1,2 @@
 /// <reference types="vite/client" />
-GEMINI_SECRET_KEY=AIzaSyBb2jKVTRft1XBwECnyywBAVu-A3_reTx0
+GEMINI_SECRET_KEY=AIzaSyDVNhbRS6Q7yyZRG3jpuBHkCUlC72-_M_0

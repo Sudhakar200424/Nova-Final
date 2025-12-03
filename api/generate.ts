@@ -1,4 +1,3 @@
-// api/generate.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
 
@@ -16,10 +15,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const result = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text: prompt }]}]
+      contents: [{ role: "user", parts: [{ text: prompt }] }]
     });
 
-    return res.status(200).json({ text: result.response.text() });
+    const text =
+      result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    if (!text) {
+      return res.status(500).json({ error: "AI returned empty response." });
+    }
+
+    return res.status(200).json({ text });
 
   } catch (err: any) {
     return res.status(500).json({ error: err.message });

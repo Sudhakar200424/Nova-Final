@@ -8,7 +8,7 @@ export interface GeminiResponse {
   error?: string;
 }
 
-export const generateContent = async (prompt: string): Promise<GeminiResponse> => {
+export const generateContent = async (prompt: string) => {
   try {
     const response = await fetch("/api/generate", {
       method: "POST",
@@ -16,18 +16,12 @@ export const generateContent = async (prompt: string): Promise<GeminiResponse> =
       body: JSON.stringify({ prompt }),
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      return { text: "", error: data.error || "Server error" };
-    }
-
-    return { text: data.text };
-
-  } catch (error: any) {
-    return { text: "", error: "Network error. Try again." };
+    return await response.json();
+  } catch (error) {
+    return { error: "Failed to reach the server." };
   }
 };
+
 
 // Prompts optimized for ATS and professional tone
 export const PROMPTS = {
