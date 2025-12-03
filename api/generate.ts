@@ -1,6 +1,5 @@
+// api/generate.ts
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
-;
 
 export const config = {
   runtime: "edge",
@@ -17,10 +16,9 @@ export default async function handler(req: Request) {
       );
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-
     const { prompt } = await req.json();
 
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const result = await model.generateContent(prompt);
@@ -29,7 +27,9 @@ export default async function handler(req: Request) {
     return new Response(JSON.stringify({ text }), { status: 200 });
 
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    return new Response(
+      JSON.stringify({ error: err.message }),
+      { status: 500 }
+    );
   }
 }
-
